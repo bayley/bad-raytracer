@@ -1,21 +1,32 @@
 #include "stdio.h"
 #include "math.h"
 
-typedef struct {
+class point
+{
+public:
+  point() {x = y = z = 0;}
+  point(float a, float b, float c);
+	point *sub(point *q);
+	float dot(point *q);
+	float norm();
+public:
 	float x; float y; float z;
-} point;
+};
 
-typedef struct {
+class ray
+{
+public:
+  ray(point *o, point *d);
+	point *at(float t);
+public:
 	point *origin;
 	point *dir;
-} ray;
+};
 
-point *newpt(float x, float y, float z) {
-  point *p = new point();
-	p->x = x;
-  p->y = y;
-  p->z = z;
-  return p;
+point::point(float a, float b, float c) {
+	x = a;
+	y = b;
+	z = c;
 }
 
 point *normalize(point *p) {
@@ -29,12 +40,32 @@ point *normalize(point *p) {
 	return q;
 }
 
-point *subpt(point *p, point *q) {
-  return newpt(p->x - q->x, p->y - q->y, p->z - q->z);
+point *point::sub(point *q) {
+  return 
+    new point(x - q->x, y - q->y, z - q->z);
+}
+
+float point::dot(point *q) {
+  return x * q->x + y * q->y + z * q->z;
+}
+
+float point::norm() {
+  return sqrtf(x * x + y * y + z * z);
 }
 
 void printpt(point *p) {
   printf("<%f, %f, %f>\n", p->x, p->y, p->z);
+}
+
+ray::ray(point *o, point *d) {
+  origin = o;
+	dir = normalize(d);
+}
+
+point *ray::at(float t) {
+  return new point(origin->x + t * dir->x,
+									 origin->y + t * dir->y,
+									 origin->z + t * dir->z);
 }
 
 class obj {
@@ -69,10 +100,13 @@ float sphere::intersect(ray *r) {
 	float cy = _center->y;
 	float cz = _center->z;
 
-	//(dx * t - cx)^2 + ... = r^2
+	//(ox + dx * t - cx)^2 + ... = r^2
+	float ux = ox - cx;
+	float uy = oy - cy;
+	float uz = oz - cz;
 	float a = dx * dx + dy * dy + dz * dz;
-	float b = -2 * (cx * dx + cy * dy + cz * dz);
-	float c = cx * cx + cy * cy + cz * cz - _r * _r;
+	float b = 2 * (ux * dx + uy * dy + uz * dz);
+	float c = ux * ux + uy * uy + uz * uz - _r * _r;
 	float disc = b * b - 4 * a * c;
 	if (disc < 0) return -1;
 	float delta = sqrtf(disc);
@@ -85,12 +119,13 @@ float sphere::intersect(ray *r) {
 }
 
 point* sphere::normal(point *p) {
-	return normalize(subpt(_center, p));
+	return normalize(_center->sub(p));
 }
 
 int main(int argc, char** argv) {
-  point *p = newpt(1, 2, 3);
-	point *q = normalize(p);
-	printpt(q);
+	sphere *sp = new sphere(new point(0, 0, 0), 1);
+	ray *r = new ray(new point(2, 2, 2),
+									 new point(-1, -1, -1));
+  printf("%f\n", sp->intersect(r));
 	return 0;
 }
